@@ -103,16 +103,6 @@
         .question-image img:hover {
             transform: scale(1.02);
         }
-        .image-placeholder {
-            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
-            height: 200px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #999;
-            font-size: 14px;
-        }
     </style>
 </head>
 <body>
@@ -135,7 +125,7 @@
                 <div class="space-y-2 text-blue-700">
                     <p>🎧 Số câu hỏi: 39 câu</p>
                     <p>⏰ Thời gian: Theo độ dài bài nghe (~40 phút)</p>
-                    <p>🔊 Audio sẽ phát liên tục từ đầu đến cuối</p>
+                    <p>📊 Audio sẽ phát liên tục từ đầu đến cuối</p>
                     <p>✅ Làm bài trực tuyến, chấm điểm tự động</p>
                     <p>📊 Kết quả sẽ được gửi về giáo viên</p>
                 </div>
@@ -333,9 +323,9 @@
 </div>
 
 <script>
-// *** QUAN TRỌNG: Dán URL Google Apps Script và Audio vào đây ***
-const GOOGLE_SCRIPT_URL = 'DÁN_URL_APPS_SCRIPT_VÀO_ĐÂY';
-const AUDIO_URL = 'https://script.google.com/macros/s/AKfycbwtXh7fUgDh8gY7vgvVC78n2bze8KoemTQJAHpIhLgh5-X6dyrkKReHgSssf43lBwHlGw/exec';
+// *** CẬP NHẬT URL - ĐÃ THAY ĐỔI ***
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwtXh7fUgDh8gY7vgvVC78n2bze8KoemTQJAHpIhLgh5-X6dyrkKReHgSssf43lBwHlGw/exec';
+const AUDIO_URL = 'https://drive.google.com/uc?export=download&id=1f4aYxlixquKN1dzA1oxG9ECOKiskaibd';
 
 // Đáp án đúng
 const correctAnswers = {
@@ -349,16 +339,16 @@ const correctAnswers = {
     36: 'B', 37: 'A', 38: 'B', 39: 'C'
 };
 
-// Link hình ảnh cho Part 1 (câu 1-7)
-// Upload 7 hình lên imgur.com hoặc imgbb.com rồi dán link vào đây
+// Link hình ảnh - HÃY THAY LINK CỤ THỂ VÀO ĐÂY
+// Từ imgbb.com, chọn "HTML image" rồi copy link, sửa format thành: https://i.ibb.co/[code]/filename.jpg
 const questionImages = {
-    1: 'https://ibb.co/k2z8G5T0', // Thay bằng link hình thật
-    2: 'https://ibb.co/d4wTSmSL',
-    3: 'https://ibb.co/fz6sd1HV',
-    4: 'https://ibb.co/fdfGFV7y',
-    5: 'https://ibb.co/sphbNRzd',
-    6: 'https://ibb.co/ksRd0HWH',
-    7: 'https://ibb.co/cXYpkTzp'
+    1: 'https://i.ibb.co/gZQTrm8w/1.png',
+    2: 'https://i.ibb.co/B25pmnmr/2.png',
+    3: 'https://i.ibb.co/Mxwmk27y/3.png',
+    4: 'https://i.ibb.co/QvLjQ7GT/4.png',
+    5: 'https://i.ibb.co/NgXtJCbd/5.png',
+    6: 'https://i.ibb.co/hJPqH7t7/6.png',
+    7: 'https://i.ibb.co/2YZLWKXL/7.png'
 };
 
 const questions = [
@@ -448,9 +438,13 @@ function setupAudio() {
     audioElement = document.getElementById('mainAudio');
     audioElement.src = AUDIO_URL;
     
-    // Tự động phát audio khi load xong
     audioElement.addEventListener('canplaythrough', function() {
         document.getElementById('audioStatus').textContent = 'Audio: Ready to play';
+    });
+    
+    audioElement.addEventListener('error', function() {
+        document.getElementById('audioStatus').textContent = 'Audio: Error loading';
+        console.error('Lỗi tải audio:', audioElement.error);
     });
     
     audioElement.load();
@@ -504,7 +498,6 @@ function onAudioComplete() {
     statusSpan.textContent = 'Audio: Completed';
     isAudioPlaying = false;
     
-    // Tự động nộp bài khi audio kết thúc
     setTimeout(() => {
         alert('⏰ Đã hết thời gian làm bài! Hệ thống sẽ tự động nộp bài.');
         submitTest();
@@ -548,7 +541,7 @@ function renderQuestions() {
         if (q.type === 'image' && questionImages[q.num]) {
             html += `
                     <div class="question-image">
-                        <img src="${questionImages[q.num]}" alt="Question ${q.num}" onclick="window.open(this.src, '_blank')">
+                        <img src="${questionImages[q.num]}" alt="Question ${q.num}" onclick="window.open(this.src, '_blank')" onerror="this.parentElement.innerHTML='<div class=\\'bg-gray-200 h-40 flex items-center justify-center\\'>Hình ảnh không tải được</div>'">
                     </div>
             `;
         }
