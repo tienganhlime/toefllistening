@@ -127,7 +127,7 @@
                     <p>⏰ Thời gian: Theo độ dài bài nghe (~40 phút)</p>
                     <p>📊 Audio sẽ phát liên tục từ đầu đến cuối</p>
                     <p>✅ Làm bài trực tuyến, chấm điểm tự động</p>
-                    <p>📊 Kết quả sẽ được gửi về giáo viên</p>
+                    <p>📊 Phân tích chi tiết năng lực học sinh</p>
                 </div>
             </div>
 
@@ -295,7 +295,7 @@
                 <div class="text-center space-y-3">
                     <p class="text-lg text-gray-700">📝 Bài làm của em đã được gửi về giáo viên</p>
                     <p class="text-lg text-gray-700">⏰ Thời gian làm bài: <span id="resultTime" class="font-bold text-blue-700"></span></p>
-                    <p class="text-lg text-gray-700">📊 Giáo viên sẽ chấm bài và thông báo điểm sau</p>
+                    <p class="text-lg text-gray-700">📊 Giáo viên sẽ phân tích chi tiết và liên hệ phụ huynh</p>
                 </div>
             </div>
 
@@ -307,7 +307,7 @@
                     <div>
                         <h3 class="font-bold text-yellow-800 mb-2">📞 Lưu ý quan trọng:</h3>
                         <p class="text-yellow-700">
-                            Giáo viên sẽ liên hệ phụ huynh qua số <span id="resultPhone" class="font-bold"></span> để thông báo kết quả. 
+                            Giáo viên sẽ liên hệ phụ huynh qua số <span id="resultPhone" class="font-bold"></span> để thông báo kết quả chi tiết. 
                             Vui lòng chú ý điện thoại nhé!
                         </p>
                     </div>
@@ -324,7 +324,7 @@
 
 <script>
 // *** CẬP NHẬT URL - ĐÃ THAY ĐỔI ***
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwtXh7fUgDh8gY7vgvVC78n2bze8KoemTQJAHpIhLgh5-X6dyrkKReHgSssf43lBwHlGw/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxLOdfSKaVWWHNZC0XuyKGzcrZ4jpZwRDLe0TeHnFzpUZ2x0YMPvfNw9PCINK7W9FwA8Q/exec';
 const AUDIO_URL = 'https://res.cloudinary.com/dwjm43pu9/video/upload/v1760689241/TOEFL_Primary___Practice_Tests___Step_2_l_All_English_4U_ecmkcu.mp3';
 
 // Đáp án đúng
@@ -339,8 +339,36 @@ const correctAnswers = {
     36: 'B', 37: 'A', 38: 'B', 39: 'C'
 };
 
-// Link hình ảnh - HÃY THAY LINK CỤ THỂ VÀO ĐÂY
-// Từ imgbb.com, chọn "HTML image" rồi copy link, sửa format thành: https://i.ibb.co/[code]/filename.jpg
+// PHÂN LOẠI CHI TIẾT CÁC KỸ NĂNG LISTENING
+const skillCategories = {
+    basicComprehension: {
+        questions: [1, 2, 3, 4, 5, 6, 7, 23, 27],
+        name: 'Hiểu cơ bản (Basic Comprehension)',
+        level: 'A1-A2'
+    },
+    mainIdea: {
+        questions: [22, 30, 33, 36],
+        name: 'Ý chính (Main Idea)',
+        level: 'A2-B1'
+    },
+    details: {
+        questions: [8, 9, 10, 11, 12, 14, 24, 25, 28, 31, 32, 37, 38],
+        name: 'Chi tiết (Details)',
+        level: 'A2'
+    },
+    inference: {
+        questions: [13, 18, 19, 29, 34, 35, 39],
+        name: 'Suy luận (Inference)',
+        level: 'B1'
+    },
+    purpose: {
+        questions: [15, 16, 17, 20, 21, 26],
+        name: 'Mục đích/Chức năng (Purpose/Function)',
+        level: 'A2-B1'
+    }
+};
+
+// Link hình ảnh
 const questionImages = {
     1: 'https://i.ibb.co/gZQTrm8w/1.png',
     2: 'https://i.ibb.co/B25pmnmr/2.png',
@@ -611,6 +639,210 @@ function updateProgress() {
     }
 }
 
+// ========== PHÂN TÍCH CHI TIẾT ==========
+
+function calculateSkillScores(answers) {
+    const scores = {};
+    
+    for (const [skill, data] of Object.entries(skillCategories)) {
+        let correct = 0;
+        data.questions.forEach(qNum => {
+            if (answers[qNum] === correctAnswers[qNum]) {
+                correct++;
+            }
+        });
+        scores[skill] = {
+            correct: correct,
+            total: data.questions.length,
+            percentage: Math.round((correct / data.questions.length) * 100)
+        };
+    }
+    
+    return scores;
+}
+
+function estimateCEFRLevel(totalScore, skillScores) {
+    const basic = skillScores.basicComprehension.percentage;
+    const inference = skillScores.inference.percentage;
+    const details = skillScores.details.percentage;
+    
+    if (totalScore >= 90 && basic >= 85 && inference >= 85) {
+        return 'B1 - Cuối (Upper B1)';
+    } else if (totalScore >= 80 && inference >= 70) {
+        return 'B1 - Giữa (Mid B1)';
+    } else if (totalScore >= 70 && inference >= 60) {
+        return 'B1 - Đầu (Lower B1)';
+    } else if (totalScore >= 60 && details >= 65) {
+        return 'A2 - Cuối (Upper A2)';
+    } else if (totalScore >= 50) {
+        return 'A2 - Giữa (Mid A2)';
+    } else if (totalScore >= 40) {
+        return 'A2 - Đầu (Lower A2)';
+    } else if (totalScore >= 30) {
+        return 'A1 - Cuối (Upper A1)';
+    } else if (totalScore >= 20) {
+        return 'A1 - Giữa (Mid A1)';
+    } else {
+        return 'A1 - Đầu (Lower A1)';
+    }
+}
+
+function generateOverallAssessment(totalScore, cefrLevel, skillScores) {
+    let assessment = `Học sinh đạt ${totalScore}% (${cefrLevel}). `;
+    
+    if (totalScore >= 80) {
+        assessment += 'Kỹ năng nghe tiếng Anh rất tốt, có thể hiểu hội thoại và câu chuyện phức tạp. ';
+    } else if (totalScore >= 60) {
+        assessment += 'Kỹ năng nghe tiếng Anh khá, có thể hiểu ý chính và một số chi tiết quan trọng. ';
+    } else if (totalScore >= 40) {
+        assessment += 'Kỹ năng nghe tiếng Anh cơ bản, cần cải thiện thêm để nắm vững các kỹ năng nghe hiểu. ';
+    } else {
+        assessment += 'Kỹ năng nghe tiếng Anh còn yếu, cần tập trung luyện nghe từ vựng và câu đơn giản hàng ngày. ';
+    }
+    
+    return assessment;
+}
+
+function analyzeListeningSkills(skillScores) {
+    let analysis = 'Kỹ năng nghe: ';
+    const strengths = [];
+    const weaknesses = [];
+    
+    if (skillScores.basicComprehension.percentage >= 75) {
+        strengths.push('hiểu cơ bản');
+    } else if (skillScores.basicComprehension.percentage < 60) {
+        weaknesses.push('hiểu câu đơn giản (cần luyện nghe từ vựng cơ bản)');
+    }
+    
+    if (skillScores.details.percentage >= 75) {
+        strengths.push('nghe chi tiết');
+    } else if (skillScores.details.percentage < 60) {
+        weaknesses.push('nghe chi tiết (cần chú ý từ khóa)');
+    }
+    
+    if (skillScores.mainIdea.percentage >= 75) {
+        strengths.push('xác định ý chính');
+    } else if (skillScores.mainIdea.percentage < 60) {
+        weaknesses.push('xác định ý chính (cần tập tóm tắt nội dung)');
+    }
+    
+    if (skillScores.inference.percentage >= 75) {
+        strengths.push('suy luận');
+    } else if (skillScores.inference.percentage < 60) {
+        weaknesses.push('suy luận ẩn ý (cần luyện đoán nghĩa)');
+    }
+    
+    if (skillScores.purpose.percentage >= 75) {
+        strengths.push('hiểu mục đích');
+    } else if (skillScores.purpose.percentage < 60) {
+        weaknesses.push('hiểu mục đích giao tiếp (cần luyện function language)');
+    }
+    
+    if (strengths.length > 0) {
+        analysis += `Điểm mạnh: ${strengths.join(', ')}. `;
+    }
+    
+    if (weaknesses.length > 0) {
+        analysis += `Cần cải thiện: ${weaknesses.join(', ')}. `;
+    } else {
+        analysis += 'Tất cả các kỹ năng nghe đều tốt. ';
+    }
+    
+    return analysis;
+}
+
+function generateDetailedStrengths(skillScores) {
+    const strengths = [];
+    
+    for (const [skill, data] of Object.entries(skillScores)) {
+        if (data.percentage >= 75) {
+            strengths.push(`${skillCategories[skill].name} (${data.percentage}%)`);
+        }
+    }
+    
+    if (strengths.length === 0) {
+        return 'Cần cố gắng thêm để phát triển điểm mạnh';
+    }
+    
+    return strengths.join(', ');
+}
+
+function generateDetailedWeaknesses(skillScores) {
+    const weaknesses = [];
+    
+    for (const [skill, data] of Object.entries(skillScores)) {
+        if (data.percentage < 60) {
+            weaknesses.push(`${skillCategories[skill].name} (${data.percentage}%) - Trình độ ${skillCategories[skill].level}`);
+        }
+    }
+    
+    if (weaknesses.length === 0) {
+        return 'Không có điểm yếu đáng kể';
+    }
+    
+    return weaknesses.join(' | ');
+}
+
+function generateDetailedRecommendations(totalScore, skillScores, cefrLevel) {
+    let recommendations = '';
+    
+    if (skillScores.basicComprehension.percentage < 60) {
+        recommendations += '🎧 HIỂU CƠ BẢN: ';
+        recommendations += '(1) Nghe 15-20 phút mỗi ngày với audio đơn giản; ';
+        recommendations += '(2) Xem phim hoạt hình có phụ đề tiếng Anh; ';
+        recommendations += '(3) Luyện dictation (nghe viết) câu ngắn. ';
+    }
+    
+    if (skillScores.details.percentage < 60) {
+        recommendations += '🔍 CHI TIẾT: ';
+        recommendations += '(1) Tập trung nghe từ khóa (who, what, when, where); ';
+        recommendations += '(2) Đọc câu hỏi trước khi nghe; ';
+        recommendations += '(3) Ghi chú nhanh thông tin quan trọng. ';
+    }
+    
+    if (skillScores.mainIdea.percentage < 60) {
+        recommendations += '💡 Ý CHÍNH: ';
+        recommendations += '(1) Chú ý câu đầu và câu cuối; ';
+        recommendations += '(2) Luyện tóm tắt đoạn nghe bằng 1 câu; ';
+        recommendations += '(3) Tìm ý được lặp lại nhiều lần. ';
+    }
+    
+    if (skillScores.inference.percentage < 60) {
+        recommendations += '🧠 SUY LUẬN: ';
+        recommendations += '(1) Học cách "nghe giữa các dòng"; ';
+        recommendations += '(2) Chú ý ngữ điệu và cảm xúc người nói; ';
+        recommendations += '(3) Luyện đoán nghĩa từ ngữ cảnh. ';
+    }
+    
+    if (skillScores.purpose.percentage < 60) {
+        recommendations += '🎯 MỤC ĐÍCH: ';
+        recommendations += '(1) Học function language (mời, từ chối, gợi ý); ';
+        recommendations += '(2) Chú ý cấu trúc "Why did...?" "What...for?"; ';
+        recommendations += '(3) Luyện với phone messages và conversations. ';
+    }
+    
+    if (cefrLevel.includes('A1')) {
+        recommendations += '\n🎯 MỤC TIÊU: Để đạt A2, cần: (1) Nghe hiểu 300-500 từ vựng hàng ngày; (2) Hiểu hội thoại ngắn 1-2 phút; (3) Nắm được ý chính và chi tiết đơn giản. ';
+    } else if (cefrLevel.includes('A2')) {
+        recommendations += '\n🎯 MỤC TIÊU: Để đạt B1, cần: (1) Nghe hiểu 1000-1500 từ vựng; (2) Hiểu audio 3-5 phút; (3) Suy luận được ẩn ý và thái độ người nói. ';
+    } else if (cefrLevel.includes('B1')) {
+        recommendations += '\n🎯 MỤC TIÊU: Duy trì và nâng cao B1, cần: (1) Nghe podcast, audiobook tiếng Anh; (2) Học từ vựng academic và idioms; (3) Luyện IELTS Listening hoặc TOEFL Junior. ';
+    }
+    
+    recommendations += '\n📖 TÀI LIỆU ĐỀ XUẤT: ';
+    if (totalScore < 50) {
+        recommendations += 'British Council LearnEnglish Kids, ESL Pod (Beginner), Simple English Videos, Peppa Pig (with subtitles). ';
+    } else if (totalScore < 70) {
+        recommendations += 'BBC Learning English (6 Minute English), ESL Pod (Intermediate), TED-Ed, VOA Learning English. ';
+    } else {
+        recommendations += 'TED Talks, Podcasts (This American Life), BBC Radio, National Geographic documentaries. ';
+    }
+    
+    recommendations += '\n💪 LUYỆN TẬP HÀNG NGÀY: (1) Nghe 20-30 phút mỗi ngày; (2) Shadow (lặp lại ngay sau người nói); (3) Dictation 5 câu mỗi ngày; (4) Xem phim có phụ đề tiếng Anh.';
+    
+    return recommendations.trim();
+}
+
 async function submitTest() {
     const unanswered = 39 - Object.keys(answers).length;
     if (unanswered > 0) {
@@ -626,7 +858,7 @@ async function submitTest() {
     submitBtn.disabled = true;
     submitBtn.innerHTML = `
         <div class="spinner"></div>
-        <span>Đang nộp bài...</span>
+        <span>Đang phân tích và nộp bài...</span>
     `;
     
     let correctCount = 0;
@@ -634,9 +866,18 @@ async function submitTest() {
         if (answers[q] === correctAnswers[q]) correctCount++;
     });
     
-    const score = Math.round((correctCount / 39) * 100);
+    const totalScore = Math.round((correctCount / 39) * 100);
     const endTime = new Date();
     const timeUsed = Math.round((endTime - startTime) / 60000);
+    
+    // PHÂN TÍCH CHI TIẾT
+    const skillScores = calculateSkillScores(answers);
+    const cefrLevel = estimateCEFRLevel(totalScore, skillScores);
+    const overallAssessment = generateOverallAssessment(totalScore, cefrLevel, skillScores);
+    const listeningAnalysis = analyzeListeningSkills(skillScores);
+    const strengthsDetail = generateDetailedStrengths(skillScores);
+    const weaknessesDetail = generateDetailedWeaknesses(skillScores);
+    const recommendationsDetail = generateDetailedRecommendations(totalScore, skillScores, cefrLevel);
     
     const dataToSend = {
         timestamp: new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
@@ -644,10 +885,21 @@ async function submitTest() {
         class: studentInfo.class,
         parentPhone: studentInfo.parentPhone,
         testType: 'Listening Test',
-        score: score,
+        score: totalScore,
         correctAnswers: correctCount,
         totalQuestions: 39,
         timeUsed: timeUsed + ' phút',
+        cefrLevel: cefrLevel,
+        basicComprehensionScore: skillScores.basicComprehension.percentage,
+        mainIdeaScore: skillScores.mainIdea.percentage,
+        detailsScore: skillScores.details.percentage,
+        inferenceScore: skillScores.inference.percentage,
+        purposeScore: skillScores.purpose.percentage,
+        overallAssessment: overallAssessment,
+        listeningAnalysis: listeningAnalysis,
+        strengthsDetail: strengthsDetail,
+        weaknessesDetail: weaknessesDetail,
+        recommendationsDetail: recommendationsDetail,
         answers: JSON.stringify(answers)
     };
     
@@ -661,7 +913,7 @@ async function submitTest() {
             body: JSON.stringify(dataToSend)
         });
         
-        console.log('Đã gửi kết quả lên Google Sheets');
+        console.log('Đã gửi kết quả chi tiết lên Google Sheets');
     } catch (error) {
         console.error('Lỗi khi gửi dữ liệu:', error);
     }
