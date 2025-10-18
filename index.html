@@ -324,7 +324,7 @@
 
 <script>
 // *** CẬP NHẬT URL - ĐÃ THAY ĐỔI ***
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxt3JrJXRNh7KnVSchsWEuqIc-0QhehIkyqze-3yVNxPhdaMo3wa8UVeaDo5rkj4Nq7/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyS26w59LpItfEFgM-gtQeNw9r4ahNXv2ehOATCbipUgZmj3Vvrio8uJuwaanCFlVe1/exec';
 const AUDIO_URL = 'https://res.cloudinary.com/dwjm43pu9/video/upload/v1760689241/TOEFL_Primary___Practice_Tests___Step_2_l_All_English_4U_ecmkcu.mp3';
 
 // Đáp án đúng
@@ -862,9 +862,20 @@ async function submitTest() {
     `;
     
     let correctCount = 0;
-    Object.keys(correctAnswers).forEach(q => {
-        if (answers[q] === correctAnswers[q]) correctCount++;
-    });
+let wrongQuestions = []; // Thêm dòng này
+
+Object.keys(correctAnswers).forEach(q => {
+    if (answers[q] === correctAnswers[q]) {
+        correctCount++;
+    } else if (answers[q]) { // Nếu đã trả lời nhưng sai
+        wrongQuestions.push(q);
+    }
+});
+
+// Chuyển mảng thành chuỗi
+const wrongQuestionsText = wrongQuestions.length > 0 
+    ? wrongQuestions.join(', ') 
+    : 'Không có';
     
     const totalScore = Math.round((correctCount / 39) * 100);
     const endTime = new Date();
@@ -900,6 +911,7 @@ async function submitTest() {
         strengthsDetail: strengthsDetail,
         weaknessesDetail: weaknessesDetail,
         recommendationsDetail: recommendationsDetail,
+         wrongQuestions: wrongQuestionsText, // THÊM DÒNG NÀY
         answers: JSON.stringify(answers)
     };
     
